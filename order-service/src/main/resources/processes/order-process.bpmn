@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_1"
+                  targetNamespace="http://bpmn.io/schema/bpmn"
+                  exporter="Camunda Modeler"
+                  exporterVersion="5.0.0">
+  <bpmn:process id="OrderProcessingProcess" name="Order Processing Process" isExecutable="true" camunda:historyTimeToLive="180">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="StartEvent_OrderPlaced" name="Order Placed">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Process Payment Task (External task polled by payment-service) -->
+    <bpmn:serviceTask id="ServiceTask_ProcessPayment" name="Process Payment" camunda:type="external" camunda:topic="payment-processing">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Exclusive Gateway -->
+    <bpmn:exclusiveGateway id="Gateway_PaymentCheck" name="Payment Successful?">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_Success</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Fail</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Kitchen Prep Task (External task polled by kitchen-service) -->
+    <bpmn:serviceTask id="ServiceTask_KitchenPrep" name="Kitchen Preparation" camunda:type="external" camunda:topic="kitchen-preparation">
+      <bpmn:incoming>Flow_Success</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Delivery Task (External task polled by delivery-service) -->
+    <bpmn:serviceTask id="ServiceTask_Delivery" name="Delivery" camunda:type="external" camunda:topic="delivery-dispatch">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_PreComplete</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Complete Order Task (Local Java Delegate updates order-service DB) -->
+    <bpmn:serviceTask id="ServiceTask_CompleteOrder" name="Complete Order" camunda:delegateExpression="${completeOrderDelegate}">
+      <bpmn:incoming>Flow_PreComplete</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Delivered End Event -->
+    <bpmn:endEvent id="EndEvent_OrderDelivered" name="Order Delivered">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Cancel Order Task (Local Java Delegate updates order-service DB to CANCELLED) -->
+    <bpmn:serviceTask id="ServiceTask_CancelOrder" name="Cancel Order" camunda:delegateExpression="${cancelOrderDelegate}">
+      <bpmn:incoming>Flow_Fail</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Cancelled End Event -->
+    <bpmn:endEvent id="EndEvent_OrderCancelled" name="Order Cancelled">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_OrderPlaced" targetRef="ServiceTask_ProcessPayment" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="ServiceTask_ProcessPayment" targetRef="Gateway_PaymentCheck" />
+    
+    <bpmn:sequenceFlow id="Flow_Success" name="Yes" sourceRef="Gateway_PaymentCheck" targetRef="ServiceTask_KitchenPrep">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paymentSuccess == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_Fail" name="No" sourceRef="Gateway_PaymentCheck" targetRef="ServiceTask_CancelOrder">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${paymentSuccess == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="ServiceTask_KitchenPrep" targetRef="ServiceTask_Delivery" />
+    <bpmn:sequenceFlow id="Flow_PreComplete" sourceRef="ServiceTask_Delivery" targetRef="ServiceTask_CompleteOrder" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="ServiceTask_CompleteOrder" targetRef="EndEvent_OrderDelivered" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="ServiceTask_CancelOrder" targetRef="EndEvent_OrderCancelled" />
+    
+  </bpmn:process>
+  
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="OrderProcessingProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_OrderPlaced">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

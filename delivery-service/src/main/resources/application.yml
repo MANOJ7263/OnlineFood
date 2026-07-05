@@ -1,0 +1,24 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: delivery-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/delivery_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: m@noj&7263hi92
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  activemq:
+    broker-url: vm://localhost?broker.persistent=false
+
+camunda.bpm.client:
+  base-url: http://localhost:8081/engine-rest
+  subscriptions:
+    delivery-dispatch:
+      variable-names:
+        - orderId

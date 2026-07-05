@@ -1,0 +1,39 @@
+# Maven build outputs
+**/target/
+*.jar
+*.war
+*.zip
+*.tar.gz
+
+# Node / React build outputs
+**/node_modules/
+**/dist/
+**/build/
+.eslintcache
+
+# IDE settings
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.factorypath
+
+# Log files
+*.log
+logs/
+
+# Local configuration / Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
