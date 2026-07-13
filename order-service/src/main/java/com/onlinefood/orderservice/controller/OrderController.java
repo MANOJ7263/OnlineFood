@@ -49,6 +49,32 @@ public class OrderController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Order> updateOrderStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest request) {
+        return orderRepository.findById(id)
+                .map(order -> {
+                    order.setStatus(request.getStatus());
+                    Order updated = orderRepository.save(order);
+                    return ResponseEntity.ok(updated);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    public static class UpdateStatusRequest {
+        private String status;
+
+        public UpdateStatusRequest() {
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+    }
+
     // Static DTO for creating order requests
     public static class CreateOrderRequest {
         private String customerName;
